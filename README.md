@@ -7,3 +7,5 @@ The HTML si CSS is provided by the course author.
 Guess the Number it's a game where you can guess a hidden number.
 
 Modal pop-up component, it's visible when clicking on one of the buttons on the page app. It can be hidden using the X button, click on the blur background, or the Esc key.
+
+Dice game between two players. Wins the one who gets more than 50 points faster. The player can hold the dice or the sum of the last rolls and add them to the score. If rolls 1 the game will switch to the other player and lose all the current points.
