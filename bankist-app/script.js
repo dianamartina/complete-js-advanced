@@ -13,7 +13,7 @@ const account1 = {
   owner: 'Jonas Schmedtmann',
   movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
   interestRate: 1.2, // %
-  pin: 1111,
+  pin: 1,
 
   movementsDates: [
     '2019-11-18T21:31:17.178Z',
@@ -26,14 +26,14 @@ const account1 = {
     '2021-03-17T10:51:36.790Z',
   ],
   currency: 'EUR',
-  locale: 'pt-PT', // de-DE
+  locale: 'ro',
 };
 
 const account2 = {
   owner: 'Jessica Davis',
   movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
   interestRate: 1.5,
-  pin: 2222,
+  pin: 2,
 
   movementsDates: [
     '2019-11-01T13:15:33.035Z',
@@ -80,21 +80,30 @@ const inputClosePin = document.querySelector('.form__input--pin');
 ////////////////////////////////////////////////////////////////////
 
 // Functions
-const formatMovementDate = function (date) {
+const formatMovementDate = function (date, locale) {
   const calcDaysPassed = (date1, date2) =>
     Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24));
 
   const daysPassed = calcDaysPassed(new Date(), date);
-  console.log(daysPassed);
+  // console.log(daysPassed);
 
   if (daysPassed === 0) return 'Today';
   if (daysPassed === 1) return 'Yesterday';
   if (daysPassed <= 7) return `${daysPassed} days ago`;
 
-  const day = `${date.getDate()}`.padStart(2, 0);
-  const month = `${date.getMonth() + 1}`.padStart(2, 0);
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  // const day = `${date.getDate()}`.padStart(2, 0);
+  // const month = `${date.getMonth() + 1}`.padStart(2, 0);
+  // const year = date.getFullYear();
+  // return `${day}/${month}/${year}`;
+  return new Intl.DateTimeFormat(locale).format(date);
+};
+
+//reusable function for formating the currency
+const formatCur = function (value, locale, currency) {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+  }).format(value);
 };
 
 // inseraree randuri cu depozit si retragere
@@ -110,7 +119,14 @@ const displayMovements = function (acc, sort = false) {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
 
     const date = new Date(acc.movementsDates[i]);
-    const displayDate = formatMovementDate(date);
+    const displayDate = formatMovementDate(date, acc.locale);
+
+    //Formatare numere
+    const formattedMov = formatCur(mov, acc.locale, acc.currency);
+    // new Intl.NumberFormat(acc.locale, {
+    //   style: 'currency',
+    //   currency: acc.currency,
+    // }).format(mov);
 
     const html = `
       <div class="movements__row">
@@ -118,7 +134,7 @@ const displayMovements = function (acc, sort = false) {
       i + 1
     } ${type}</div>
     <div class="movements__date">${displayDate}</div>
-          <div class="movements__value">${mov.toFixed(2)}€</div>
+          <div class="movements__value">${formattedMov}</div>
         </div>`;
 
     containerMovements.insertAdjacentHTML('afterbegin', html); //afiseaza elementle in UI
@@ -130,7 +146,8 @@ const displayMovements = function (acc, sort = false) {
 //calcul total cont
 const calcDisplayBalance = function (acc) {
   acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${acc.balance.toFixed(2)}€`;
+
+  labelBalance.textContent = formatCur(acc.balance, acc.locale, acc.currency);
 };
 
 // calcDisplayBalance(account1.movements);
@@ -141,12 +158,12 @@ const calcDisplaySummary = function (acc) {
   const incomes = acc.movements
     .filter(mov => mov > 0)
     .reduce((acc, mov) => acc + mov, 0);
-  labelSumIn.textContent = `${incomes.toFixed(2)}€`;
+  labelSumIn.textContent = formatCur(incomes, acc.locale, acc.currency);
 
   const out = acc.movements
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + mov, 0);
-  labelSumOut.textContent = `${Math.abs(out).toFixed(2)}€`;
+  labelSumOut.textContent = formatCur(Math.abs(out), acc.locale, acc.currency);
 
   const interest = acc.movements
     .filter(mov => mov > 0)
@@ -156,7 +173,7 @@ const calcDisplaySummary = function (acc) {
       return int >= 1;
     })
     .reduce((acc, int) => acc + int, 0);
-  labelSumInterest.textContent = `${interest.toFixed(2)}€`;
+  labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
 };
 
 // calcDisplaySummary(account1.movements);
@@ -186,14 +203,45 @@ const updateUI = function (currentAccount) {
   calcDisplaySummary(currentAccount);
 };
 
+//timer de inactivitate
+const startLogOutTimer = function () {
+  //timer-ul
+  const tick = function () {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+
+    //In each call, print the remaining time to UI
+    labelTimer.textContent = `${min}:${sec}`;
+
+    //When 0 sec, stop timer and log out user
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = `Log in to get started`;
+      containerApp.style.opacity = 0;
+    }
+
+    //Decrease 1s
+    time--;
+  };
+
+  //Set time to 2 minutes
+  let time = 120;
+
+  //Call the timer every second
+  tick();
+  const timer = setInterval(tick, 1000);
+
+  return timer; //preiau timer-ul
+};
+
 /////////////////////////////////////////////////////
 //Event handlers
-let currentAccount;
+let currentAccount, timer;
 
-//Fake always logged in
-currentAccount = account1; // account js
-updateUI(currentAccount);
-containerApp.style.opacity = 100;
+//Fake always logged in -  to test our code
+// currentAccount = account1; // account js
+// updateUI(currentAccount);
+// containerApp.style.opacity = 100;
 
 //day/month/year
 
@@ -215,19 +263,49 @@ btnLogin.addEventListener('click', function (e) {
 
     //Create current date and hour
     const now = new Date();
-    const day = `${now.getDate()}`.padStart(2, 0);
-    const month = `${now.getMonth() + 1}`.padStart(2, 0);
-    const year = now.getFullYear();
-    const hour = `${now.getHours()}`.padStart(2, 0);
-    const min = `${now.getMinutes()}`.padStart(2, 0);
-    // console.log(hour);
-    labelDate.textContent = `${day}/${month}/${year}, ${hour}:${min}`;
+
+    //introducem date avand formatul specific fiecarei tari
+    //Experimenting API
+
+    const options = {
+      hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'numeric', //aici poate fi si long- va afisa numele lunii
+      year: 'numeric',
+      // weekday: 'long', //short, narrow
+    };
+
+    //alegem limba browserului
+    // const locale = navigator.language;
+    // console.log(locale); //en-US
+
+    // va afisa formatul in limba in care este browserul
+    // labelDate.textContent = new Intl.DateTimeFormat('locale', options).format(now );
+
+    // va afisa formatul datei conform celui din cont
+    labelDate.textContent = new Intl.DateTimeFormat(
+      currentAccount.locale,
+      options
+    ).format(now);
+
     //Clear input fields
     inputLoginUsername.value = inputLoginPin.value = '';
     inputLoginPin.blur();
 
+    //Timer - sterg timer-ul daca ma loghez cun alt cont
+    if (timer) {
+      clearInterval(timer);
+    }
+    timer = startLogOutTimer();
+
     // Update UI
     updateUI(currentAccount);
+
+    //Reset timer
+    clearInterval(timer); // stergem timer-ul anterior
+    //repornim un alt timer
+    timer = startLogOutTimer();
   }
 });
 
@@ -236,14 +314,16 @@ btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
   const amount = Math.floor(inputLoanAmount.value);
   if (amount > 0 && currentAccount.movements.some(mov => mov >= amount / 10)) {
-    // Add movement
-    currentAccount.movements.push(amount);
+    setTimeout(function () {
+      // Add movement
+      currentAccount.movements.push(amount);
 
-    //Add loan date
-    currentAccount.movementsDates.push(new Date().toISOString());
+      //Add loan date
+      currentAccount.movementsDates.push(new Date().toISOString());
 
-    //Update Ui
-    updateUI(currentAccount);
+      //Update Ui
+      updateUI(currentAccount);
+    }, 2500);
   }
   inputLoanAmount.value = '';
 });
@@ -276,6 +356,11 @@ btnTransfer.addEventListener('click', function (e) {
 
     // Update UI
     updateUI(currentAccount);
+
+    //Reset timer
+    clearInterval(timer); // stergem timer-ul anterior
+    //repornim un alt timer
+    timer = startLogOutTimer();
   }
 });
 
