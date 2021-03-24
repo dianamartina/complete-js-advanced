@@ -15,3 +15,5 @@ Dice game between two players. Wins the one who gets more than 50 points faster.
 Bankist app - stands for minimalist banking. For login to the app use: user1: js, pass: 1, or user2: jd, pass:2. Each user account has the current balance, the movements, the summary data. On the right side, there are 3 options we can do, transfer money from an account to another, request a loan and close the account.
 
 Bankist-UI - adding different effects on the Bankist UI, using JS like: fade-in, sticky menu bar, tab component, slider, smooth animation when clicking the menu.
+
+Mapty-App - on the map, the user can log his workouts like running and cycling. Clicking the workout list, the map moves to that area. On reload, the app will keep the state(localStorage). The map it's loaded from a third-party service(Leaflet) and the position markers are automatically obtained from the browser using geolocation.
